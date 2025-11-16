@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Resume Screening</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            max-width: 900px;
+            width: 100%;
+            padding: 40px;
+        }
+
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 40px;
+            font-size: 1.1em;
+        }
+
+        .upload-section {
+            background: #f8f9fa;
+            border: 2px dashed #667eea;
+            border-radius: 15px;
+            padding: 40px;
+            text-align: center;
+            margin-bottom: 30px;
+            transition: all 0.3s ease;
+        }
+
+        .upload-section:hover {
+            border-color: #764ba2;
+            background: #f0f1f5;
+        }
+
+        .file-input-wrapper {
+            position: relative;
+            overflow: hidden;
+            display: inline-block;
+        }
+
+        .file-input-wrapper input[type=file] {
+            position: absolute;
+            left: -9999px;
+        }
+
+        .file-input-label {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px 40px;
+            border-radius: 50px;
+            cursor: pointer;
+            font-size: 1.1em;
+            font-weight: 600;
+            transition: transform 0.2s;
+            display: inline-block;
+        }
+
+        .file-input-label:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .file-name {
+            margin-top: 15px;
+            color: #666;
+            font-size: 0.95em;
+        }
+
+        .model-selection {
+            margin-bottom: 30px;
+        }
+
+        .model-selection label {
+            display: block;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 1.1em;
+        }
+
+        select {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 1em;
+            background: white;
+            cursor: pointer;
+            transition: border-color 0.3s;
+        }
+
+        select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .analyze-btn {
+            width: 100%;
+            padding: 18px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.2em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .analyze-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .analyze-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .results {
+            display: none;
+            margin-top: 40px;
+        }
+
+        .result-card {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 20px;
+            border-left: 5px solid #667eea;
+        }
+
+        .result-card h2 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 1.5em;
+        }
+
+        .prediction-box {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 25px;
+            border-radius: 12px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .prediction-box h3 {
+            font-size: 2em;
+            margin-bottom: 10px;
+        }
+
+        .confidence {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+
+        .top-predictions {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .prediction-item {
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            border: 2px solid #e0e0e0;
+        }
+
+        .prediction-item strong {
+            color: #667eea;
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        .skills-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+        }
+
+        .skill-category {
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            border: 2px solid #e0e0e0;
+        }
+
+        .skill-category h4 {
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 1.1em;
+        }
+
+        .skill-tag {
+            display: inline-block;
+            background: #e8eaf6;
+            color: #667eea;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            margin: 5px 5px 5px 0;
+        }
+
+        .job-org-list {
+            list-style: none;
+        }
+
+        .job-org-list li {
+            background: white;
+            padding: 12px 15px;
+            margin-bottom: 10px;
+            border-radius: 8px;
+            border-left: 3px solid #667eea;
+        }
+
+        .error {
+            background: #ffebee;
+            color: #c62828;
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 20px;
+            border-left: 5px solid #c62828;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px;
+            }
+
+            h1 {
+                font-size: 2em;
+            }
+
+            .upload-section {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🤖 AI Resume Screening</h1>
+        <p class="subtitle">Upload a resume PDF to analyze category, skills, and work experience</p>
+
+        <form id="resumeForm">
+            <div class="upload-section">
+                <div class="file-input-wrapper">
+                    <label class="file-input-label" for="resumeFile">
+                        📄 Choose Resume PDF
+                    </label>
+                    <input type="file" id="resumeFile" name="resume" accept=".pdf" required>
+                </div>
+                <div class="file-name" id="fileName">No file chosen</div>
+            </div>
+
+            <div class="model-selection">
+                <label for="modelSelect">Select Classification Model:</label>
+                <select id="modelSelect" name="model">
+                    <option value="mnb">Multinomial Naive Bayes + TF-IDF (MNB + TF-IDF)</option>
+                    <option value="lr">Logistic Regression + TF-IDF (LR + TF-IDF)</option>
+                </select>
+            </div>
+
+            <button type="submit" class="analyze-btn" id="analyzeBtn">
+                🔍 Analyze Resume
+            </button>
+        </form>
+
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p style="margin-top: 15px; color: #666;">Analyzing resume...</p>
+        </div>
+
+        <div id="error"></div>
+
+        <div class="results" id="results">
+            <div class="prediction-box">
+                <h3 id="predictedCategory"></h3>
+                <p class="confidence" id="confidence"></p>
+                <p style="opacity: 0.8; margin-top: 10px;" id="modelUsed"></p>
+            </div>
+
+            <div class="result-card">
+                <h2>📊 Top 3 Predictions</h2>
+                <div class="top-predictions" id="topPredictions"></div>
+            </div>
+
+            <div class="result-card">
+                <h2>💼 Work Experience</h2>
+                <ul class="job-org-list" id="jobOrgList"></ul>
+            </div>
+
+            <div class="result-card">
+                <h2>🎯 Extracted Skills</h2>
+                <div class="skills-grid" id="skillsGrid"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const fileInput = document.getElementById('resumeFile');
+        const fileName = document.getElementById('fileName');
+        const form = document.getElementById('resumeForm');
+        const loading = document.getElementById('loading');
+        const results = document.getElementById('results');
+        const errorDiv = document.getElementById('error');
+        const analyzeBtn = document.getElementById('analyzeBtn');
+
+        fileInput.addEventListener('change', function() {
+            if (this.files.length > 0) {
+                fileName.textContent = this.files[0].name;
+            } else {
+                fileName.textContent = 'No file chosen';
+            }
+        });
+
+        form.addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            const formData = new FormData(form);
+            
+            // Hide previous results and errors
+            results.style.display = 'none';
+            errorDiv.innerHTML = '';
+            loading.style.display = 'block';
+            analyzeBtn.disabled = true;
+
+            try {
+                const response = await fetch('/analyze', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.error || 'Analysis failed');
+                }
+
+                // Display results
+                displayResults(data);
+                results.style.display = 'block';
+            } catch (error) {
+                errorDiv.innerHTML = `<div class="error">❌ ${error.message}</div>`;
+            } finally {
+                loading.style.display = 'none';
+                analyzeBtn.disabled = false;
+            }
+        });
+
+        function displayResults(data) {
+            // Main prediction
+            document.getElementById('predictedCategory').textContent = data.prediction;
+            document.getElementById('confidence').textContent = `Confidence: ${data.confidence.toFixed(1)}%`;
+            document.getElementById('modelUsed').textContent = `Model: ${data.model}`;
+
+            // Top 3 predictions
+            const topPredictions = document.getElementById('topPredictions');
+            topPredictions.innerHTML = data.top_predictions.map(pred => `
+                <div class="prediction-item">
+                    <strong>${pred.category}</strong>
+                    <div>${pred.confidence.toFixed(1)}%</div>
+                </div>
+            `).join('');
+
+            // Job-Org relations
+            const jobOrgList = document.getElementById('jobOrgList');
+            jobOrgList.innerHTML = data.job_org_relations.map(rel => 
+                `<li>${rel}</li>`
+            ).join('');
+
+            // Skills
+            const skillsGrid = document.getElementById('skillsGrid');
+            const nonEmptyDomains = Object.entries(data.skills).filter(([domain, skills]) => skills.length > 0);
+
+            if (nonEmptyDomains.length > 0) {
+                skillsGrid.innerHTML = nonEmptyDomains.map(([domain, skills]) => `
+                    <div class="skill-category">
+                        <h4>${domain}</h4>
+                        <div>
+                            ${skills.map(skill => `<span class="skill-tag">${skill}</span>`).join('')}
+                        </div>
+                    </div>
+                `).join('');
+            } else {
+                skillsGrid.innerHTML = '<p style="color: #666;">No specific skills detected</p>';
+            }
+        }
+    </script>
+</body>
+</html>
