@@ -1,4 +1,6 @@
 import re
+
+from sklearn.feature_selection import SelectKBest, chi2
 from flask import Flask, render_template, request, jsonify
 import PyPDF2
 import pickle
@@ -314,9 +316,13 @@ def extract_skills(text, skills_pool):
 app = Flask(__name__)
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max
 
-tfidf_vectorizer = pickle.load(open('tfidf_vectorizer.pkl', 'rb'))
-classifier_mnb = pickle.load(open('classifier_tfidf_mnb.pkl', 'rb'))
-classifier_lr = pickle.load(open('classifier_tfidf_lr.pkl', 'rb'))
+# tfidf_vectorizer = pickle.load(open('tfidf_vectorizer.pkl', 'rb'))
+tfidf_vectorizer_MNB = pickle.load(open('./TF-IDF Models/tfidf_vectorizer_MNB.pkl', 'rb'))
+tfidf_vectorizer_LR = pickle.load(open('./TF-IDF Models/tfidf_vectorizer_LR.pkl', 'rb'))
+selector_MNB = pickle.load(open('./TF-IDF Models/selector_MNB.pkl', 'rb'))
+selector_LR = pickle.load(open('./TF-IDF Models/selector_LR.pkl', 'rb'))
+classifier_mnb = pickle.load(open('./TF-IDF Models/classifier_tfidf_mnb.pkl', 'rb'))
+classifier_lr = pickle.load(open('./TF-IDF Models/classifier_tfidf_lr.pkl', 'rb'))
 
 
 def extract_text_from_pdf(pdf_file):
@@ -358,16 +364,20 @@ def analyze():
     print("Finished preprocessing")
     
     # Vectorize
-    text_tfidf = tfidf_vectorizer.transform([processed_text])
+    # text_tfidf = tfidf_vectorizer.transform([processed_text])
     
     # Predict based on model choice
     if model_choice == 'mnb':
-        prediction = classifier_mnb.predict(text_tfidf)[0]
-        probabilities = classifier_mnb.predict_proba(text_tfidf)[0]
+        text_tfidf = tfidf_vectorizer_MNB.transform([processed_text])
+        text_fs_tfidf = selector_MNB.transform(text_tfidf)
+        prediction = classifier_mnb.predict(text_fs_tfidf)[0]
+        probabilities = classifier_mnb.predict_proba(text_fs_tfidf)[0]
         model_name = "Multinomial Naive Bayes"
     else:
-        prediction = classifier_lr.predict(text_tfidf)[0]
-        probabilities = classifier_lr.predict_proba(text_tfidf)[0]
+        text_tfidf = tfidf_vectorizer_LR.transform([processed_text])
+        text_fs_tfidf = selector_LR.transform(text_tfidf)
+        prediction = classifier_lr.predict(text_fs_tfidf)[0]
+        probabilities = classifier_lr.predict_proba(text_fs_tfidf)[0]
         model_name = "Logistic Regression"
     
     # Get top 3 predictions with probabilities
