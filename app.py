@@ -6,7 +6,7 @@ import re
 from nltk.corpus import stopwords
 from nltk.tokenize import RegexpTokenizer
 from nltk.stem import WordNetLemmatizer
-from info_extraction import extract_skills, extract_job_org_relations, skills_pool
+from info_extraction import extract_job_org_relations, extract_skills
 
 
 def preprocess_resume(text):
@@ -119,7 +119,7 @@ def analyze():
     ]
     
     # Extract skills and job-org relations
-    skills = extract_skills(text, skills_pool)
+    skills = extract_skills(text)
     job_orgs = extract_job_org_relations(text)
     
     return jsonify({
