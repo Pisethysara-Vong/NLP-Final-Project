@@ -67,9 +67,10 @@ def extract_job_org_relations(text):
     for entry in job_entries:
         job_title = entry.get('job_title', '').strip()
         company = entry.get('company', '').strip()
+        duration = entry.get('duration', '').strip()
 
         if job_title and company:
-            relations.append(f"{job_title} at {company}")
+            relations.append(f"{job_title} at {company} ({duration})")
 
     return relations if relations else ["No clear job-org relationships found"]
 

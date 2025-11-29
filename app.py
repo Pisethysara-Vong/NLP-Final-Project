@@ -46,10 +46,13 @@ app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max
 # tfidf_vectorizer = pickle.load(open('tfidf_vectorizer.pkl', 'rb'))
 tfidf_vectorizer_MNB = pickle.load(open('./TF-IDF Models/tfidf_vectorizer_MNB.pkl', 'rb'))
 tfidf_vectorizer_LR = pickle.load(open('./TF-IDF Models/tfidf_vectorizer_LR.pkl', 'rb'))
+tfidf_vectorizer_SVM = pickle.load(open('./TF-IDF Models/tfidf_vectorizer_SVM.pkl', 'rb'))
 selector_MNB = pickle.load(open('./TF-IDF Models/selector_MNB.pkl', 'rb'))
 selector_LR = pickle.load(open('./TF-IDF Models/selector_LR.pkl', 'rb'))
+selector_SVM = pickle.load(open('./TF-IDF Models/selector_SVM.pkl', 'rb'))
 classifier_mnb = pickle.load(open('./TF-IDF Models/classifier_tfidf_mnb.pkl', 'rb'))
 classifier_lr = pickle.load(open('./TF-IDF Models/classifier_tfidf_lr.pkl', 'rb'))
+classifier_svm = pickle.load(open('./TF-IDF Models/classifier_tfidf_svm.pkl', 'rb'))
 
 
 def extract_text_from_pdf(pdf_file):
@@ -100,12 +103,18 @@ def analyze():
         prediction = classifier_mnb.predict(text_fs_tfidf)[0]
         probabilities = classifier_mnb.predict_proba(text_fs_tfidf)[0]
         model_name = "Multinomial Naive Bayes"
-    else:
+    elif model_choice == 'lr':
         text_tfidf = tfidf_vectorizer_LR.transform([processed_text])
         text_fs_tfidf = selector_LR.transform(text_tfidf)
         prediction = classifier_lr.predict(text_fs_tfidf)[0]
         probabilities = classifier_lr.predict_proba(text_fs_tfidf)[0]
         model_name = "Logistic Regression"
+    else: 
+        text_tfidf = tfidf_vectorizer_SVM.transform([processed_text])
+        text_fs_tfidf = selector_SVM.transform(text_tfidf)
+        prediction = classifier_svm.predict(text_fs_tfidf)[0]
+        probabilities = classifier_svm.decision_function(text_fs_tfidf)[0]
+        model_name = "Support Vector Machine (SVM)"
     
     # Get top 3 predictions with probabilities
     classes = classifier_mnb.classes_ if model_choice == 'mnb' else classifier_lr.classes_
