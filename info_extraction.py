@@ -34,8 +34,14 @@ def extract_job_entries(experience_text):
     
     job_entries = []
     
-    main_pattern = r'([A-Z][^\n—\-]+?)\s*[—\-–]\s*([A-Z][^\n(]+?)\s*\(([^)]+)\)'
-    matches = re.finditer(main_pattern, experience_text)
+    # Pattern 1: "Job Title [separator] Company Name (Duration)"
+    # Supports separators: —, -, at, for, @
+    # Examples:
+    # - Software Developer — CloudWorks Technologies (Apr 2022 – Present)
+    # - Software Developer at CloudWorks Technologies (Apr 2022 – Present)
+    # - Software Developer for CloudWorks Technologies (Apr 2022 – Present)
+    pattern1 = r'([A-Z][^\n—\-]+?)\s*(?:[—\-–]|at|for|@)\s*([A-Z][^\n(]+?)\s*\(([^)]+)\)'
+    matches = re.finditer(pattern1, experience_text, re.IGNORECASE)
     
     for match in matches:
         job_title = match.group(1).strip()
@@ -51,7 +57,64 @@ def extract_job_entries(experience_text):
                 'duration': duration,
                 'raw_text': match.group(0)
             })
-
+    
+    # Pattern 2: Company name on one line, then role with duration on next line
+    # Example:
+    # SheetsResume.com                                    Aug, 2023 – Present
+    # Co-Founder                                          Remote
+    lines = experience_text.split('\n')
+    i = 0
+    
+    while i < len(lines) - 1:
+        current_line = lines[i].strip()
+        next_line = lines[i + 1].strip() if i + 1 < len(lines) else ""
+        
+        # Skip empty lines and bullet points
+        if not current_line or current_line.startswith('•') or current_line.startswith('-') or current_line.startswith('○'):
+            i += 1
+            continue
+        
+        # Check if current line looks like a company name (starts with capital, reasonable length)
+        # and next line looks like a job title
+        if current_line and next_line:
+            # Check if current line has dates on the right side (after multiple spaces or tabs)
+            # Pattern: "Company Name          Aug, 2023 – Present"
+            company_date_pattern = r'^(.+?)\s{2,}([A-Z][a-z]{2,},?\s+\d{4}\s*[–\-—]\s*(?:[A-Z][a-z]{2,},?\s+\d{4}|Present))$'
+            company_match = re.match(company_date_pattern, current_line, re.IGNORECASE)
+            
+            if company_match:
+                company = company_match.group(1).strip()
+                duration = company_match.group(2).strip()
+                
+                # Next line should have the job title (may also have Remote/On-site on right)
+                # Pattern: "Co-Founder          Remote" or just "Co-Founder"
+                title_pattern = r'^(.+?)(?:\s{2,}(?:Remote|On-site|Hybrid|In-person))?$'
+                title_match = re.match(title_pattern, next_line, re.IGNORECASE)
+                
+                if title_match:
+                    job_title = title_match.group(1).strip()
+                    
+                    # Validate it looks like a job title
+                    job_title_indicators = [
+                        'founder', 'co-founder', 'manager', 'director', 'engineer', 'developer',
+                        'analyst', 'designer', 'specialist', 'coordinator', 'consultant',
+                        'representative', 'officer', 'supervisor', 'lead', 'architect',
+                        'associate', 'intern', 'assistant', 'head', 'chief', 'president',
+                        'vice president', 'vp', 'ceo', 'cto', 'cfo', 'coo'
+                    ]
+                    
+                    if any(indicator in job_title.lower() for indicator in job_title_indicators):
+                        job_entries.append({
+                            'job_title': job_title,
+                            'company': company,
+                            'duration': duration,
+                            'raw_text': f"{current_line}\n{next_line}"
+                        })
+                        i += 2  # Skip next line since we already processed it
+                        continue
+        
+        i += 1
+    
     return job_entries
 
 # Job-Organization relationship extraction
